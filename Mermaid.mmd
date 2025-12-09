@@ -23,7 +23,7 @@ erDiagram
         string EMAIL
     }
 
-    CLASS {
+    CLASSROOM {
         string CLASS_ID
         string SCHOOL_ID
         string EDUCATOR_ID
@@ -59,8 +59,8 @@ erDiagram
 
     DISTRICT ||--o{ SCHOOL       : "has schools"
     SCHOOL   ||--o{ EDUCATOR     : "employs"
-    SCHOOL   ||--o{ CLASS        : "offers classes"
-    CLASS    ||--o{ STUDENT      : "contains students"
+    SCHOOL   ||--o{ CLASSROOM    : "offers classes"
+    CLASSROOM ||--o{ STUDENT      : "contains students"
     STUDENT  ||--o{ TEST_RESULTS : "has test results"
-    CLASS    ||--o{ TEST_RESULTS : "context for"
+    CLASSROOM ||--o{ TEST_RESULTS : "context for"
     SCHOOL   ||--o{ TEST_RESULTS : "location for"
