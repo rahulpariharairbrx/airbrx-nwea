@@ -1,0 +1,66 @@
+erDiagram
+    DISTRICT {
+        string DISTRICT_ID
+        string NAME
+        string STATE
+        string TIMEZONE
+    }
+
+    SCHOOL {
+        string SCHOOL_ID
+        string DISTRICT_ID
+        string NAME
+        string LEVEL
+        string STATE
+        string TIMEZONE
+    }
+
+    EDUCATOR {
+        string EDUCATOR_ID
+        string SCHOOL_ID
+        string FIRST_NAME
+        string LAST_NAME
+        string EMAIL
+    }
+
+    CLASS {
+        string CLASS_ID
+        string SCHOOL_ID
+        string EDUCATOR_ID
+        string NAME
+        string SUBJECT
+    }
+
+    STUDENT {
+        string STUDENT_ID
+        string FIRST_NAME
+        string LAST_NAME
+        number GRADE
+        string SCHOOL_ID
+        string CLASS_ID
+        date   ENROLLMENT_DATE
+        string STATUS
+    }
+
+    TEST_RESULTS {
+        string TEST_RESULT_ID
+        string STUDENT_ID
+        string SCHOOL_ID
+        string CLASS_ID
+        string SUBJECT
+        string TERM
+        number TEST_YEAR
+        date   TEST_DATE
+        string TEST_NAME
+        number SCORE
+        number PERCENTILE
+        number SCALED_SCORE
+    }
+
+    DISTRICT ||--o{ SCHOOL       : "has schools"
+    SCHOOL   ||--o{ EDUCATOR     : "employs"
+    SCHOOL   ||--o{ CLASS        : "offers classes"
+    CLASS    ||--o{ STUDENT      : "contains students"
+    STUDENT  ||--o{ TEST_RESULTS : "has test results"
+    CLASS    ||--o{ TEST_RESULTS : "context for"
+    SCHOOL   ||--o{ TEST_RESULTS : "location for"
