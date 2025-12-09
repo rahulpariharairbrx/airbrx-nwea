@@ -1,0 +1,161 @@
+flowchart TD
+
+  %% =========================
+  %% DASHBOARD / QUERY SOURCES
+  %% =========================
+
+  subgraph Dashboards["NWEA Dashboards & Query Use Cases"]
+    UC1["UC1 – District Term Summary
+    (School x Subject x Term)"]
+
+    UC2["UC2 – Class Growth Fall→Winter 2025
+    (VW_DASH_CLASS_GROWTH_2025)"]
+
+    UC3["UC3 – Student Term Growth
+    (VW_DASH_STUDENT_TERM_GROWTH_2025)"]
+
+    UC4["UC4 – Educator Completeness / Missing Data
+    (LEFT JOIN Class→Test_Results)"]
+
+    UC5["UC5 – At-Risk Students
+    (Missing Fall/Winter/Spring)"]
+
+    UC6["UC6 – Cross-Subject Correlation
+    (Math vs Reading, same term)"]
+
+    UC7["UC7 – Class Performance Distribution
+    (Below 25 / 25–75 / >75 bands)"]
+
+    UC8a["UC8a – Educator Portfolio (Teacher/Educator)
+    (VW_DASH_EDUCATOR_PORTFOLIO_2025)"]
+
+    UC8b["UC8b – Educator Portfolio (District Admin)
+    (Same view, admin perspective)"]
+  end
+
+
+  %% =========================
+  %% CACHE RULES
+  %% =========================
+
+  subgraph Rules["AirBrx Cache Rules (by priority)"]
+    direction TB
+
+    R0["R0 – Global NWEA Baseline
+    priority = 10
+    scope: schema = NWEA.ASSESSMENT_BSD, statement = SELECT
+    cache: ttl=60s, key=[standardizedSql]"]
+
+    R1["R1 – UC1 District Term Summary Cache
+    priority = 40
+    tables: TEST_RESULTS + SCHOOL + DISTRICT
+    cache: ttl=300s, key=[standardizedSql]"]
+
+    R2["R2 – UC2 Class Growth Fall→Winter
+    priority = 70
+    table: VW_DASH_CLASS_GROWTH_2025
+    cache: ttl=900s, key=[standardizedSql]"]
+
+    R3["R3 – UC3 Student Term Growth (Per-User)
+    priority = 80
+    table: VW_DASH_STUDENT_TERM_GROWTH_2025
+    cache: ttl=120s, key=[userId, standardizedSql]"]
+
+    R4["R4 – UC4 Educator Completeness NO-CACHE
+    priority = 90
+    tables: EDUCATOR + CLASS + TEST_RESULTS
+    columns include: fall_results_count
+    cache: disabled"]
+
+    R5["R5 – UC5 At-Risk Students
+    priority = 60
+    tables: STUDENT + TEST_RESULTS
+    columns include: terms_present
+    cache: ttl=600s, key=[userRole, standardizedSql]"]
+
+    R6["R6 – UC6 Cross-Subject Correlation
+    priority = 50
+    table: TEST_RESULTS (Math + Reading join)
+    columns include: math_score, reading_score
+    cache: ttl=300s, key=[standardizedSql]"]
+
+    R7["R7 – UC7 Class Distribution Bands
+    priority = 55
+    tables: TEST_RESULTS + CLASS
+    columns: below_25, mid_25_75, above_75
+    cache: ttl=300s, key=[standardizedSql]"]
+
+    R8["R8 – UC8 Educator Portfolio (Default Teacher/Educator)
+    priority = 45
+    table: VW_DASH_EDUCATOR_PORTFOLIO_2025
+    userRole in [teacher, educator]
+    cache: ttl=600s, key=[userId, standardizedSql]"]
+
+    R9["R9 – UC8 Educator Portfolio (District Admin Override)
+    priority = 75
+    table: VW_DASH_EDUCATOR_PORTFOLIO_2025
+    userRole = district_admin
+    cache: ttl=120s, key=[userRole, standardizedSql]"]
+  end
+
+
+  %% =========================
+  %% MAPPINGS: DASHBOARD -> RULE(S)
+  %% (Arrows show which rules may evaluate; priority decides winner)
+  %% =========================
+
+  %% UC1 – District term summary
+  UC1 --> R1
+  UC1 -. also matches baseline .-> R0
+
+  %% UC2 – Class Growth
+  UC2 --> R2
+  UC2 -. also matches baseline .-> R0
+
+  %% UC3 – Student Term Growth (per-student)
+  UC3 --> R3
+  UC3 -. also matches baseline .-> R0
+
+  %% UC4 – Educator completeness (no-cache override)
+  UC4 --> R4
+  UC4 -. also matches baseline + UC1/UC7 tables .-> R0
+
+  %% UC5 – At-Risk students
+  UC5 --> R5
+  UC5 -. also matches baseline .-> R0
+
+  %% UC6 – Cross-subject correlation
+  UC6 --> R6
+  UC6 -. also matches baseline .-> R0
+
+  %% UC7 – Class distribution bands
+  UC7 --> R7
+  UC7 -. also matches baseline .-> R0
+
+  %% UC8 – Educator portfolio
+  UC8a --> R8
+  UC8a -. also matches baseline .-> R0
+
+  UC8b --> R9
+  UC8b -. also matches baseline .-> R0
+
+
+  %% =========================
+  %% LEGEND / NOTES
+  %% =========================
+
+  classDef baseline fill:#fdf2e9,stroke:#e67e22,stroke-width:1px,color:#333;
+  classDef override fill:#fdecea,stroke:#c0392b,stroke-width:1px,color:#333;
+  classDef cacheHeavy fill:#e8f8f5,stroke:#16a085,stroke-width:1px,color:#333;
+  classDef perUser fill:#eaf2fb,stroke:#2874a6,stroke-width:1px,color:#333;
+
+  class R0 baseline;
+  class R4 override;
+  class R1,R2,R5,R6,R7,R8,R9 cacheHeavy;
+  class R3 perUser;
+
+  %% Textual summary:
+  %% - R0 is a low-priority baseline cache for all NWEA SELECTs.
+  %% - R1–R3, R5–R7, R8 are more specific caches which override R0.
+  %% - R4 is a high-priority NO-CACHE rule overriding any cache for UC4 queries.
+  %% - R9 overrides R8 when userRole = district_admin for the same view.

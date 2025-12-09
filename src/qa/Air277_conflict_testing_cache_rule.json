@@ -1,0 +1,428 @@
+{
+    "rulesetId": "nwea_conflict_testing_v1",
+    "description": "AirBrx cache rules for NWEA Beaverton dataset, designed for priority & conflict testing across 8 dashboard use cases.",
+    "rules": [
+        {
+            "id": "rule_global_nwea_baseline",
+            "useCase": "Baseline",
+            "dashboard": "All NWEA.ASSESSMENT_BSD SELECT queries",
+            "goal": "Provide a low-priority fallback cache for any SELECT on the NWEA schema.",
+            "name": "Baseline cache for NWEA dashboards",
+            "description": "Low-priority cache rule for all SELECT queries on NWEA.ASSESSMENT_BSD, used as a fallback in conflict tests.",
+            "enabled": true,
+            "priority": 10,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "schema",
+                        "op": "equals",
+                        "value": "NWEA.ASSESSMENT_BSD"
+                    },
+                    {
+                        "field": "statement",
+                        "op": "equals",
+                        "value": "SELECT"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": true,
+                    "ttlSeconds": 60,
+                    "cacheKeyElements": [
+                        "standardizedSql"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "rule_uc1_district_term_summary",
+            "useCase": "Use Case 1 – District Term Summary (Fall/Winter/Spring 2025)",
+            "dashboard": "District summary by school & subject across terms.",
+            "goal": "Cache aggressively; results are identical for all users.",
+            "name": "UC1 – District term summary cache",
+            "description": "Caches district-level dashboard aggregating TEST_RESULTS by school, subject, and term for 2025.",
+            "enabled": true,
+            "priority": 40,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "TEST_RESULTS"
+                    },
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "SCHOOL"
+                    },
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "DISTRICT"
+                    },
+                    {
+                        "field": "statement",
+                        "op": "equals",
+                        "value": "SELECT"
+                    },
+                    {
+                        "field": "columns",
+                        "op": "includes",
+                        "value": "TERM"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": true,
+                    "ttlSeconds": 300,
+                    "cacheKeyElements": [
+                        "standardizedSql"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "rule_uc2_class_growth_fall_winter",
+            "useCase": "Use Case 2 – Class Growth Fall→Winter 2025",
+            "dashboard": "VW_DASH_CLASS_GROWTH_2025 – class-level growth between Fall 2025 and Winter 2025.",
+            "goal": "Cache heavily for everyone; override global baseline.",
+            "name": "UC2 – Class growth Fall→Winter 2025",
+            "description": "Caches class-level growth comparisons between Fall 2025 and Winter 2025 using VW_DASH_CLASS_GROWTH_2025.",
+            "enabled": true,
+            "priority": 70,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "VW_DASH_CLASS_GROWTH_2025"
+                    },
+                    {
+                        "field": "statement",
+                        "op": "equals",
+                        "value": "SELECT"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": true,
+                    "ttlSeconds": 900,
+                    "cacheKeyElements": [
+                        "standardizedSql"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "rule_uc3_student_term_growth",
+            "useCase": "Use Case 3 – Student Term Growth (Fall/Winter/Spring 2025)",
+            "dashboard": "VW_DASH_STUDENT_TERM_GROWTH_2025 – per-student growth across three terms.",
+            "goal": "Cache with short TTL and isolate by user to respect RLS; per-user drilldown.",
+            "name": "UC3 – Student term growth (per-student drilldown)",
+            "description": "User-scoped cache for student growth dashboard to avoid cross-user leakage.",
+            "enabled": true,
+            "priority": 80,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "VW_DASH_STUDENT_TERM_GROWTH_2025"
+                    },
+                    {
+                        "field": "statement",
+                        "op": "equals",
+                        "value": "SELECT"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": true,
+                    "ttlSeconds": 120,
+                    "cacheKeyElements": [
+                        "userId",
+                        "standardizedSql"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "rule_uc4_educator_completeness_nocache",
+            "useCase": "Use Case 4 – Educator Completeness / Missing Data",
+            "dashboard": "QA dashboard that shows whether each class has results for each term.",
+            "goal": "Always hit the warehouse (no cache); use as a high-priority override for freshness.",
+            "name": "UC4 – Educator completeness no-cache",
+            "description": "Disables caching for educator completeness views, ensuring live data while entries are changing.",
+            "enabled": true,
+            "priority": 90,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "EDUCATOR"
+                    },
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "CLASS"
+                    },
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "TEST_RESULTS"
+                    },
+                    {
+                        "field": "columns",
+                        "op": "includes",
+                        "value": "fall_results_count"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": false,
+                    "ttlSeconds": 0,
+                    "cacheKeyElements": []
+                }
+            }
+        },
+        {
+            "id": "rule_uc5_at_risk_students",
+            "useCase": "Use Case 5 – At-Risk Students Missing Terms",
+            "dashboard": "List of students missing one or more of Fall/Winter/Spring 2025.",
+            "goal": "Cache for a moderate time, scoped by role; used for planning and intervention dashboards.",
+            "name": "UC5 – At-risk students missing terms",
+            "description": "Caches the list of students with incomplete term coverage; scoped by user role to respect visibility.",
+            "enabled": true,
+            "priority": 60,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "STUDENT"
+                    },
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "TEST_RESULTS"
+                    },
+                    {
+                        "field": "statement",
+                        "op": "equals",
+                        "value": "SELECT"
+                    },
+                    {
+                        "field": "columns",
+                        "op": "includes",
+                        "value": "terms_present"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": true,
+                    "ttlSeconds": 600,
+                    "cacheKeyElements": [
+                        "userRole",
+                        "standardizedSql"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "rule_uc6_cross_subject_correlation",
+            "useCase": "Use Case 6 – Cross-Subject Correlation (Math vs Reading)",
+            "dashboard": "Correlation dashboard comparing Math vs Reading scores for students in the same term.",
+            "goal": "Cache for all users; data changes slowly.",
+            "name": "UC6 – Cross-subject correlation cache",
+            "description": "Caches dashboard that joins Math and Reading scores per student and term.",
+            "enabled": true,
+            "priority": 50,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "TEST_RESULTS"
+                    },
+                    {
+                        "field": "columns",
+                        "op": "includes",
+                        "value": "math_score"
+                    },
+                    {
+                        "field": "columns",
+                        "op": "includes",
+                        "value": "reading_score"
+                    },
+                    {
+                        "field": "statement",
+                        "op": "equals",
+                        "value": "SELECT"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": true,
+                    "ttlSeconds": 300,
+                    "cacheKeyElements": [
+                        "standardizedSql"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "rule_uc7_class_distribution",
+            "useCase": "Use Case 7 – Class Performance Distribution (Percentile Bands)",
+            "dashboard": "Class-level distribution of students across percentile bands by term.",
+            "goal": "Cache aggregated distributions for all users with a medium TTL.",
+            "name": "UC7 – Class performance distribution cache",
+            "description": "Caches class-level distribution of percentiles into below_25 / mid_25_75 / above_75 bands.",
+            "enabled": true,
+            "priority": 55,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "TEST_RESULTS"
+                    },
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "CLASS"
+                    },
+                    {
+                        "field": "columns",
+                        "op": "includes",
+                        "value": "below_25"
+                    },
+                    {
+                        "field": "columns",
+                        "op": "includes",
+                        "value": "mid_25_75"
+                    },
+                    {
+                        "field": "columns",
+                        "op": "includes",
+                        "value": "above_75"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": true,
+                    "ttlSeconds": 300,
+                    "cacheKeyElements": [
+                        "standardizedSql"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "rule_uc8_educator_portfolio_default",
+            "useCase": "Use Case 8 – Educator Portfolio (Teacher/Educator)",
+            "dashboard": "VW_DASH_EDUCATOR_PORTFOLIO_2025 – educator view of classes and term averages.",
+            "goal": "Cache per educator with moderate TTL; results differ by educator identity.",
+            "name": "UC8 – Educator portfolio cache (default)",
+            "description": "Default cache rule for VW_DASH_EDUCATOR_PORTFOLIO_2025, typically used by teachers and educators.",
+            "enabled": true,
+            "priority": 45,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "VW_DASH_EDUCATOR_PORTFOLIO_2025"
+                    },
+                    {
+                        "field": "statement",
+                        "op": "equals",
+                        "value": "SELECT"
+                    },
+                    {
+                        "field": "userRole",
+                        "op": "in",
+                        "value": "teacher,educator"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": true,
+                    "ttlSeconds": 600,
+                    "cacheKeyElements": [
+                        "userId",
+                        "standardizedSql"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "rule_uc8_educator_portfolio_admin_override",
+            "useCase": "Use Case 8 – Educator Portfolio (District Admin Override)",
+            "dashboard": "VW_DASH_EDUCATOR_PORTFOLIO_2025 – same view, district-wide admin perspective.",
+            "goal": "Provide fresher data for district admins with a shorter TTL; override default educator rule.",
+            "name": "UC8 – Educator portfolio cache (district admin override)",
+            "description": "Higher-priority cache rule for VW_DASH_EDUCATOR_PORTFOLIO_2025 when accessed by district_admin role.",
+            "enabled": true,
+            "priority": 75,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "VW_DASH_EDUCATOR_PORTFOLIO_2025"
+                    },
+                    {
+                        "field": "statement",
+                        "op": "equals",
+                        "value": "SELECT"
+                    },
+                    {
+                        "field": "userRole",
+                        "op": "equals",
+                        "value": "district_admin"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": true,
+                    "ttlSeconds": 120,
+                    "cacheKeyElements": [
+                        "userRole",
+                        "standardizedSql"
+                    ]
+                }
+            }
+        }
+    ]
+}
