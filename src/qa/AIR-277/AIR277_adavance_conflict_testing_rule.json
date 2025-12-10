@@ -1,0 +1,679 @@
+{
+    "rulesetId": "nwea_advanced_conflict_testing_v2",
+    "description": "Advanced cache rules for sophisticated priority conflict testing, edge cases, and multi-dimensional scenarios.",
+    "rules": [
+        {
+            "id": "rule_time_based_morning_peak",
+            "useCase": "Advanced Test 1 - Time-Based Caching",
+            "dashboard": "Morning peak hours (7-9 AM) - aggressive caching",
+            "goal": "Test temporal dimension in rule matching + conflicts with static rules",
+            "name": "Morning peak aggressive cache",
+            "description": "During school hours (7-9 AM), cache all queries more aggressively to reduce Snowflake load.",
+            "enabled": true,
+            "priority": 65,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "schema",
+                        "op": "equals",
+                        "value": "NWEA.ASSESSMENT_BSD"
+                    },
+                    {
+                        "field": "statement",
+                        "op": "equals",
+                        "value": "SELECT"
+                    },
+                    {
+                        "field": "requestTime",
+                        "op": "between",
+                        "value": "07:00-09:00"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": true,
+                    "ttlSeconds": 600,
+                    "cacheKeyElements": [
+                        "RAHULPARIHARAIRBRX",
+                        "NWEA",
+                        "NWEA.ASSESSMENT_BSD",
+                        "COMPUTE_WH"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "rule_tenant_premium_override",
+            "useCase": "Advanced Test 2 - Tenant-Based Override",
+            "dashboard": "Premium tenant gets fresher data",
+            "goal": "Test tenant dimension creating conflicts with role-based rules",
+            "name": "Premium tenant fresh data",
+            "description": "Premium tenants get shorter TTL for fresher insights, overriding standard caching.",
+            "enabled": true,
+            "priority": 85,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "TEST_RESULTS"
+                    },
+                    {
+                        "field": "statement",
+                        "op": "equals",
+                        "value": "SELECT"
+                    },
+                    {
+                        "field": "tenant",
+                        "op": "equals",
+                        "value": "premium"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": true,
+                    "ttlSeconds": 60,
+                    "cacheKeyElements": [
+                        "tenant",
+                        "standardizedSql"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "rule_exploratory_no_cache",
+            "useCase": "Advanced Test 3 - Origin-Based No-Cache",
+            "dashboard": "Exploratory queries from analytics tools bypass cache",
+            "goal": "Test origin header conflicts with cached dashboard rules",
+            "name": "Exploratory analytics no-cache",
+            "description": "Queries originating from exploratory analytics tools (Tableau prep, DBeaver) bypass cache.",
+            "enabled": true,
+            "priority": 95,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "schema",
+                        "op": "equals",
+                        "value": "NWEA.ASSESSMENT_BSD"
+                    },
+                    {
+                        "field": "origin",
+                        "op": "in",
+                        "value": "tableau_prep,dbeaver,datagrip"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": false,
+                    "ttlSeconds": 0,
+                    "cacheKeyElements": [
+                        "RAHULPARIHARAIRBRX",
+                        "NWEA",
+                        "NWEA.ASSESSMENT_BSD",
+                        "COMPUTE_WH"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "rule_large_result_set_short_ttl",
+            "useCase": "Advanced Test 4 - Result Size Based Caching",
+            "dashboard": "Queries returning >10K rows get short TTL",
+            "goal": "Test result-size based rule conflicts with standard dashboard rules",
+            "name": "Large result set short cache",
+            "description": "Large queries (>10K rows) cached for shorter time to avoid stale data at scale.",
+            "enabled": true,
+            "priority": 35,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "TEST_RESULTS"
+                    },
+                    {
+                        "field": "statement",
+                        "op": "equals",
+                        "value": "SELECT"
+                    },
+                    {
+                        "field": "estimatedRows",
+                        "op": "greaterThan",
+                        "value": 10000
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": true,
+                    "ttlSeconds": 180,
+                    "cacheKeyElements": [
+                        "standardizedSql"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "rule_filter_by_specific_school",
+            "useCase": "Advanced Test 5 - Filter Specificity",
+            "dashboard": "Queries filtering on West View school only",
+            "goal": "Test SQL predicate matching for hyper-specific caching",
+            "name": "West View specific cache",
+            "description": "Queries specifically for West View High School get dedicated cache.",
+            "enabled": true,
+            "priority": 52,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "SCHOOL"
+                    },
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "TEST_RESULTS"
+                    },
+                    {
+                        "field": "sqlPredicate",
+                        "op": "contains",
+                        "value": "NAME = 'West View'"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": true,
+                    "ttlSeconds": 450,
+                    "cacheKeyElements": [
+                        "RAHULPARIHARAIRBRX",
+                        "NWEA",
+                        "NWEA.ASSESSMENT_BSD",
+                        "COMPUTE_WH"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "rule_aggregation_heavy_long_ttl",
+            "useCase": "Advanced Test 6 - Aggregation Detection",
+            "dashboard": "Queries with multiple aggregations (AVG, COUNT, etc.)",
+            "goal": "Test detection of expensive aggregations for longer caching",
+            "name": "Heavy aggregation long cache",
+            "description": "Queries with 5+ aggregation functions cached longer due to compute cost.",
+            "enabled": true,
+            "priority": 48,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "tables",
+                        "op": "includes",
+                        "value": "TEST_RESULTS"
+                    },
+                    {
+                        "field": "aggregationFunctions",
+                        "op": "countGreaterThan",
+                        "value": 5
+                    },
+                    {
+                        "field": "statement",
+                        "op": "equals",
+                        "value": "SELECT"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": true,
+                    "ttlSeconds": 1800,
+                    "cacheKeyElements": [
+                        "RAHULPARIHARAIRBRX",
+                        "NWEA",
+                        "NWEA.ASSESSMENT_BSD",
+                        "COMPUTE_WH"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "rule_join_count_penalty",
+            "useCase": "Advanced Test 7 - Join Complexity Detection",
+            "dashboard": "Queries with 4+ joins get moderate TTL",
+            "goal": "Test join complexity detection for caching strategy",
+            "name": "Complex join moderate cache",
+            "description": "Queries joining 4+ tables are expensive but may change, use moderate TTL.",
+            "enabled": true,
+            "priority": 42,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "joinCount",
+                        "op": "greaterThanOrEqual",
+                        "value": 4
+                    },
+                    {
+                        "field": "statement",
+                        "op": "equals",
+                        "value": "SELECT"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": true,
+                    "ttlSeconds": 400,
+                    "cacheKeyElements": [
+                        "standardizedSql"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "rule_subquery_no_cache",
+            "useCase": "Advanced Test 8 - Subquery Detection",
+            "dashboard": "Queries with correlated subqueries bypass cache",
+            "goal": "Test subquery pattern matching for cache bypass",
+            "name": "Correlated subquery no-cache",
+            "description": "Correlated subqueries often have dynamic behavior, bypass cache.",
+            "enabled": true,
+            "priority": 82,
+            "mode": "allow",
+            "conditions": {
+                "mode": "ALL",
+                "items": [
+                    {
+                        "field": "hasCorrelatedSubquery",
+                        "op": "equals",
+                        "value": true
+                    },
+                    {
+                        "field": "statement",
+                        "op": "equals",
+                        "value": "SELECT"
+                    }
+                ]
+            },
+            "actions": {
+                "cache": {
+                    "enabled": false,
+                    "ttlSeconds": 0,
+                    "cacheKeyElements": [
+                        "RAHULPARIHARAIRBRX",
+                        "NWEA",
+                        "NWEA.ASSESSMENT_BSD",
+                        "COMPUTE_WH"
+                    ]
+                }
+            },
+            {
+                "id": "rule_current_date_function_short_ttl",
+                "useCase": "Advanced Test 9 - Temporal Function Detection",
+                "dashboard": "Queries using CURRENT_DATE() get very short TTL",
+                "goal": "Test temporal function detection for dynamic query handling",
+                "name": "Current date query short TTL",
+                "description": "Queries with CURRENT_DATE() or NOW() need short TTL as they're time-dependent.",
+                "enabled": true,
+                "priority": 72,
+                "mode": "allow",
+                "conditions": {
+                    "mode": "ALL",
+                    "items": [
+                        {
+                            "field": "sqlText",
+                            "op": "contains",
+                            "value": "CURRENT_DATE"
+                        },
+                        {
+                            "field": "statement",
+                            "op": "equals",
+                            "value": "SELECT"
+                        }
+                    ]
+                },
+                "actions": {
+                    "cache": {
+                        "enabled": true,
+                        "ttlSeconds": 30,
+                        "cacheKeyElements": [
+                            "RAHULPARIHARAIRBRX",
+                            "NWEA",
+                            "NWEA.ASSESSMENT_BSD",
+                            "COMPUTE_WH"
+                        ]
+                    }
+                }
+            },
+            {
+                "id": "rule_limit_clause_detection",
+                "useCase": "Advanced Test 10 - LIMIT Clause Handling",
+                "dashboard": "Queries with LIMIT ≤100 cached separately",
+                "goal": "Test pagination/preview queries vs full result caching",
+                "name": "Preview query cache",
+                "description": "Queries with small LIMIT are often previews, cache with distinct key.",
+                "enabled": true,
+                "priority": 38,
+                "mode": "allow",
+                "conditions": {
+                    "mode": "ALL",
+                    "items": [
+                        {
+                            "field": "hasLimitClause",
+                            "op": "equals",
+                            "value": true
+                        },
+                        {
+                            "field": "limitValue",
+                            "op": "lessThanOrEqual",
+                            "value": 100
+                        },
+                        {
+                            "field": "statement",
+                            "op": "equals",
+                            "value": "SELECT"
+                        }
+                    ]
+                },
+                "actions": {
+                    "cache": {
+                        "enabled": true,
+                        "ttlSeconds": 120,
+                        "cacheKeyElements": [
+                            "RAHULPARIHARAIRBRX",
+                            "NWEA",
+                            "NWEA.ASSESSMENT_BSD",
+                            "COMPUTE_WH"
+                        ]
+                    }
+                }
+            },
+            {
+                "id": "rule_window_function_medium_ttl",
+                "useCase": "Advanced Test 11 - Window Function Detection",
+                "dashboard": "Queries with window functions (ROW_NUMBER, RANK, etc.)",
+                "goal": "Test analytical function detection for appropriate caching",
+                "name": "Window function cache",
+                "description": "Window functions are expensive, cache for medium duration.",
+                "enabled": true,
+                "priority": 53,
+                "mode": "allow",
+                "conditions": {
+                    "mode": "ALL",
+                    "items": [
+                        {
+                            "field": "hasWindowFunction",
+                            "op": "equals",
+                            "value": true
+                        },
+                        {
+                            "field": "tables",
+                            "op": "includes",
+                            "value": "TEST_RESULTS"
+                        }
+                    ]
+                },
+                "actions": {
+                    "cache": {
+                        "enabled": true,
+                        "ttlSeconds": 600,
+                        "cacheKeyElements": [
+                            "standardizedSql"
+                        ]
+                    }
+                }
+            },
+            {
+                "id": "rule_distinct_select_short_ttl",
+                "useCase": "Advanced Test 12 - DISTINCT Detection",
+                "dashboard": "SELECT DISTINCT queries get shorter TTL",
+                "goal": "Test DISTINCT keyword handling for deduplication queries",
+                "name": "Distinct query short cache",
+                "description": "DISTINCT queries often check for data quality issues, use shorter TTL.",
+                "enabled": true,
+                "priority": 36,
+                "mode": "allow",
+                "conditions": {
+                    "mode": "ALL",
+                    "items": [
+                        {
+                            "field": "hasDistinct",
+                            "op": "equals",
+                            "value": true
+                        },
+                        {
+                            "field": "tables",
+                            "op": "includes",
+                            "value": "STUDENT"
+                        }
+                    ]
+                },
+                "actions": {
+                    "cache": {
+                        "enabled": true,
+                        "ttlSeconds": 200,
+                        "cacheKeyElements": [
+                            "RAHULPARIHARAIRBRX",
+                            "NWEA",
+                            "NWEA.ASSESSMENT_BSD",
+                            "COMPUTE_WH"
+                        ]
+                    }
+                }
+            },
+            {
+                "id": "rule_developer_debug_bypass",
+                "useCase": "Advanced Test 13 - Debug Header Override",
+                "dashboard": "Requests with x-debug header bypass all caching",
+                "goal": "Test debug mode conflicts with all other rules",
+                "name": "Debug mode no-cache",
+                "description": "Developer debug mode bypasses all caching for troubleshooting.",
+                "enabled": true,
+                "priority": 99,
+                "mode": "allow",
+                "conditions": {
+                    "mode": "ALL",
+                    "items": [
+                        {
+                            "field": "header",
+                            "op": "exists",
+                            "value": "x-debug"
+                        }
+                    ]
+                },
+                "actions": {
+                    "cache": {
+                        "enabled": false,
+                        "ttlSeconds": 0,
+                        "cacheKeyElements": [
+                            "RAHULPARIHARAIRBRX",
+                            "NWEA",
+                            "NWEA.ASSESSMENT_BSD",
+                            "COMPUTE_WH"
+                        ]
+                    }
+                }
+            },
+            {
+                "id": "rule_api_vs_dashboard_isolation",
+                "useCase": "Advanced Test 14 - Origin-Based Cache Isolation",
+                "dashboard": "API requests cached separately from dashboard requests",
+                "goal": "Test origin dimension for multi-channel cache isolation",
+                "name": "API request cache isolation",
+                "description": "API requests get separate cache namespace from UI dashboards.",
+                "enabled": true,
+                "priority": 47,
+                "mode": "allow",
+                "conditions": {
+                    "mode": "ALL",
+                    "items": [
+                        {
+                            "field": "origin",
+                            "op": "equals",
+                            "value": "api"
+                        },
+                        {
+                            "field": "tables",
+                            "op": "includes",
+                            "value": "TEST_RESULTS"
+                        }
+                    ]
+                },
+                "actions": {
+                    "cache": {
+                        "enabled": true,
+                        "ttlSeconds": 300,
+                        "cacheKeyElements": [
+                            "RAHULPARIHARAIRBRX",
+                            "NWEA",
+                            "NWEA.ASSESSMENT_BSD",
+                            "COMPUTE_WH"
+                        ]
+                    }
+                }
+            },
+            {
+                "id": "rule_ci_cd_test_no_cache",
+                "useCase": "Advanced Test 15 - CI/CD Test Environment",
+                "dashboard": "CI/CD integration tests bypass cache",
+                "goal": "Test environment-based rule conflicts",
+                "name": "CI/CD test no-cache",
+                "description": "Automated tests need fresh data every time, no caching in test environment.",
+                "enabled": true,
+                "priority": 98,
+                "mode": "allow",
+                "conditions": {
+                    "mode": "ALL",
+                    "items": [
+                        {
+                            "field": "environment",
+                            "op": "equals",
+                            "value": "ci_cd"
+                        }
+                    ]
+                },
+                "actions": {
+                    "cache": {
+                        "enabled": false,
+                        "ttlSeconds": 0,
+                        "cacheKeyElements": [
+                            "RAHULPARIHARAIRBRX",
+                            "NWEA",
+                            "NWEA.ASSESSMENT_BSD",
+                            "COMPUTE_WH"
+                        ]
+                    }
+                }
+            }
+        ],
+        "advancedConflictScenarios": [
+            {
+                "scenarioId": "conflict_1",
+                "description": "Premium tenant + Morning peak + UC1",
+                "conflictingRules": [
+                    "rule_uc1_district_term_summary (40)",
+                    "rule_time_based_morning_peak (65)",
+                    "rule_tenant_premium_override (85)"
+                ],
+                "expectedWinner": "rule_tenant_premium_override",
+                "reason": "Highest priority (85), tenant specificity wins"
+            },
+            {
+                "scenarioId": "conflict_2",
+                "description": "Debug header overrides everything",
+                "conflictingRules": [
+                    "rule_tenant_premium_override (85)",
+                    "rule_uc4_educator_completeness_nocache (90)",
+                    "rule_developer_debug_bypass (99)"
+                ],
+                "expectedWinner": "rule_developer_debug_bypass",
+                "reason": "Highest priority (99), debug mode forces no-cache"
+            },
+            {
+                "scenarioId": "conflict_3",
+                "description": "Large result + Heavy aggregation + UC1",
+                "conflictingRules": [
+                    "rule_large_result_set_short_ttl (35)",
+                    "rule_uc1_district_term_summary (40)",
+                    "rule_aggregation_heavy_long_ttl (48)"
+                ],
+                "expectedWinner": "rule_aggregation_heavy_long_ttl",
+                "reason": "Highest priority (48), aggregation cost more important than size"
+            },
+            {
+                "scenarioId": "conflict_4",
+                "description": "Current date function + UC6 + Window function",
+                "conflictingRules": [
+                    "rule_uc6_cross_subject_correlation (50)",
+                    "rule_window_function_medium_ttl (53)",
+                    "rule_current_date_function_short_ttl (72)"
+                ],
+                "expectedWinner": "rule_current_date_function_short_ttl",
+                "reason": "Temporal dependency requires fresh data, highest priority"
+            },
+            {
+                "scenarioId": "conflict_5",
+                "description": "Subquery no-cache vs Premium tenant",
+                "conflictingRules": [
+                    "rule_subquery_no_cache (82)",
+                    "rule_tenant_premium_override (85)"
+                ],
+                "expectedWinner": "rule_tenant_premium_override",
+                "reason": "Premium tenant (85) > subquery (82), but both want different actions!"
+            }
+        ],
+        "testQueries": [
+            {
+                "queryId": "advanced_test_1",
+                "sql": "SELECT d.NAME, sc.NAME, c.SUBJECT, tr.TERM, COUNT(*) AS num_results FROM TEST_RESULTS tr JOIN CLASS c ON tr.CLASS_ID = c.CLASS_ID JOIN SCHOOL sc ON tr.SCHOOL_ID = sc.SCHOOL_ID JOIN DISTRICT d ON sc.DISTRICT_ID = d.DISTRICT_ID WHERE tr.TERM = 'Fall 2025' GROUP BY d.NAME, sc.NAME, c.SUBJECT, tr.TERM;",
+                "headers": {
+                    "x-tenant": "premium",
+                    "x-request-time": "08:30:00"
+                },
+                "expectedRule": "rule_tenant_premium_override",
+                "expectedTTL": 60,
+                "conflictCount": 3
+            },
+            {
+                "queryId": "advanced_test_2",
+                "sql": "SELECT * FROM VW_DASH_CLASS_GROWTH_2025 WHERE score_delta > 5;",
+                "headers": {
+                    "x-debug": "true"
+                },
+                "expectedRule": "rule_developer_debug_bypass",
+                "expectedTTL": 0,
+                "cacheEnabled": false
+            },
+            {
+                "queryId": "advanced_test_3",
+                "sql": "SELECT s.STUDENT_ID, AVG(CASE WHEN c.SUBJECT = 'Math' THEN tr.SCORE END) AS math_score, AVG(CASE WHEN c.SUBJECT = 'Reading' THEN tr.SCORE END) AS reading_score, (math_score - reading_score) AS delta, ROW_NUMBER() OVER (ORDER BY delta DESC) AS rank FROM TEST_RESULTS tr JOIN STUDENT s ON tr.STUDENT_ID = s.STUDENT_ID JOIN CLASS c ON tr.CLASS_ID = c.CLASS_ID WHERE tr.TERM = 'Fall 2025' GROUP BY s.STUDENT_ID;",
+                "headers": {},
+                "expectedRule": "rule_window_function_medium_ttl",
+                "expectedTTL": 600,
+                "conflictCount": 4
+            },
+            {
+                "queryId": "advanced_test_4",
+                "sql": "SELECT sc.NAME, COUNT(*) AS result_count FROM TEST_RESULTS tr JOIN SCHOOL sc ON tr.SCHOOL_ID = sc.SCHOOL_ID WHERE sc.NAME = 'West View' AND tr.TEST_DATE >= CURRENT_DATE() - 30 GROUP BY sc.NAME;",
+                "headers": {},
+                "expectedRule": "rule_current_date_function_short_ttl",
+                "expectedTTL": 30,
+                "conflictCount": 3
+            }
+        ]
+    }

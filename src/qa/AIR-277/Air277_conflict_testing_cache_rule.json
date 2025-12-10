@@ -32,7 +32,10 @@
                     "enabled": true,
                     "ttlSeconds": 60,
                     "cacheKeyElements": [
-                        "standardizedSql"
+                        "RAHULPARIHARAIRBRX",
+                        "NWEA",
+                        "NWEA.ASSESSMENT_BSD",
+                        "COMPUTE_WH"
                     ]
                 }
             }
@@ -82,7 +85,10 @@
                     "enabled": true,
                     "ttlSeconds": 300,
                     "cacheKeyElements": [
-                        "standardizedSql"
+                        "RAHULPARIHARAIRBRX",
+                        "NWEA",
+                        "NWEA.ASSESSMENT_BSD",
+                        "COMPUTE_WH"
                     ]
                 }
             }
@@ -117,7 +123,10 @@
                     "enabled": true,
                     "ttlSeconds": 900,
                     "cacheKeyElements": [
-                        "standardizedSql"
+                        "RAHULPARIHARAIRBRX",
+                        "NWEA",
+                        "NWEA.ASSESSMENT_BSD",
+                        "COMPUTE_WH"
                     ]
                 }
             }
@@ -126,9 +135,9 @@
             "id": "rule_uc3_student_term_growth",
             "useCase": "Use Case 3 – Student Term Growth (Fall/Winter/Spring 2025)",
             "dashboard": "VW_DASH_STUDENT_TERM_GROWTH_2025 – per-student growth across three terms.",
-            "goal": "Cache with short TTL and isolate by user to respect RLS; per-user drilldown.",
+            "goal": "Cache with short TTL; for conflict testing, use a fixed cache key instead of user-scoped keys.",
             "name": "UC3 – Student term growth (per-student drilldown)",
-            "description": "User-scoped cache for student growth dashboard to avoid cross-user leakage.",
+            "description": "Previously user-scoped; in this conflict-testing profile, uses a fixed cache key set.",
             "enabled": true,
             "priority": 80,
             "mode": "allow",
@@ -152,8 +161,10 @@
                     "enabled": true,
                     "ttlSeconds": 120,
                     "cacheKeyElements": [
-                        "userId",
-                        "standardizedSql"
+                        "RAHULPARIHARAIRBRX",
+                        "NWEA",
+                        "NWEA.ASSESSMENT_BSD",
+                        "COMPUTE_WH"
                     ]
                 }
             }
@@ -205,9 +216,9 @@
             "id": "rule_uc5_at_risk_students",
             "useCase": "Use Case 5 – At-Risk Students Missing Terms",
             "dashboard": "List of students missing one or more of Fall/Winter/Spring 2025.",
-            "goal": "Cache for a moderate time, scoped by role; used for planning and intervention dashboards.",
+            "goal": "Cache for a moderate time; for conflict testing, use a fixed cache key across roles.",
             "name": "UC5 – At-risk students missing terms",
-            "description": "Caches the list of students with incomplete term coverage; scoped by user role to respect visibility.",
+            "description": "Caches the list of students with incomplete term coverage; in this profile, uses a fixed cache key set.",
             "enabled": true,
             "priority": 60,
             "mode": "allow",
@@ -241,8 +252,10 @@
                     "enabled": true,
                     "ttlSeconds": 600,
                     "cacheKeyElements": [
-                        "userRole",
-                        "standardizedSql"
+                        "RAHULPARIHARAIRBRX",
+                        "NWEA",
+                        "NWEA.ASSESSMENT_BSD",
+                        "COMPUTE_WH"
                     ]
                 }
             }
@@ -287,7 +300,10 @@
                     "enabled": true,
                     "ttlSeconds": 300,
                     "cacheKeyElements": [
-                        "standardizedSql"
+                        "RAHULPARIHARAIRBRX",
+                        "NWEA",
+                        "NWEA.ASSESSMENT_BSD",
+                        "COMPUTE_WH"
                     ]
                 }
             }
@@ -337,7 +353,10 @@
                     "enabled": true,
                     "ttlSeconds": 300,
                     "cacheKeyElements": [
-                        "standardizedSql"
+                        "RAHULPARIHARAIRBRX",
+                        "NWEA",
+                        "NWEA.ASSESSMENT_BSD",
+                        "COMPUTE_WH"
                     ]
                 }
             }
@@ -346,9 +365,9 @@
             "id": "rule_uc8_educator_portfolio_default",
             "useCase": "Use Case 8 – Educator Portfolio (Teacher/Educator)",
             "dashboard": "VW_DASH_EDUCATOR_PORTFOLIO_2025 – educator view of classes and term averages.",
-            "goal": "Cache per educator with moderate TTL; results differ by educator identity.",
+            "goal": "Cache per educator with moderate TTL; for conflict testing, use a fixed cache key instead of user-scoped.",
             "name": "UC8 – Educator portfolio cache (default)",
-            "description": "Default cache rule for VW_DASH_EDUCATOR_PORTFOLIO_2025, typically used by teachers and educators.",
+            "description": "Default cache rule for VW_DASH_EDUCATOR_PORTFOLIO_2025; in this profile, uses a fixed cache key set.",
             "enabled": true,
             "priority": 45,
             "mode": "allow",
@@ -377,8 +396,10 @@
                     "enabled": true,
                     "ttlSeconds": 600,
                     "cacheKeyElements": [
-                        "userId",
-                        "standardizedSql"
+                        "RAHULPARIHARAIRBRX",
+                        "NWEA",
+                        "NWEA.ASSESSMENT_BSD",
+                        "COMPUTE_WH"
                     ]
                 }
             }
@@ -418,8 +439,10 @@
                     "enabled": true,
                     "ttlSeconds": 120,
                     "cacheKeyElements": [
-                        "userRole",
-                        "standardizedSql"
+                        "RAHULPARIHARAIRBRX",
+                        "NWEA",
+                        "NWEA.ASSESSMENT_BSD",
+                        "COMPUTE_WH"
                     ]
                 }
             }
