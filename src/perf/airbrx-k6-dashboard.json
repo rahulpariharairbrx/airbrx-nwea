@@ -1,0 +1,756 @@
+{
+    "dashboard": {
+        "title": "AirBrx Cache Rules Engine - Load Test Dashboard",
+        "uid": "airbrx-k6-dashboard",
+        "timezone": "browser",
+        "schemaVersion": 16,
+        "version": 1,
+        "refresh": "5s",
+        "time": {
+            "from": "now-15m",
+            "to": "now"
+        },
+        "tags": [
+            "k6",
+            "airbrx",
+            "load-testing",
+            "cache"
+        ],
+        "annotations": {
+            "list": [
+                {
+                    "datasource": "InfluxDB-K6",
+                    "enable": true,
+                    "hide": false,
+                    "iconColor": "rgba(255, 96, 96, 1)",
+                    "name": "Test Events",
+                    "type": "tags"
+                }
+            ]
+        },
+        "panels": [
+            {
+                "id": 1,
+                "title": "Test Overview",
+                "type": "stat",
+                "gridPos": {
+                    "h": 4,
+                    "w": 24,
+                    "x": 0,
+                    "y": 0
+                },
+                "targets": [
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT last(\"value\") FROM \"vus\" WHERE $timeFilter",
+                        "alias": "Virtual Users",
+                        "refId": "A"
+                    },
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT count(\"value\") FROM \"http_reqs\" WHERE $timeFilter",
+                        "alias": "Total Requests",
+                        "refId": "B"
+                    },
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT sum(\"value\") FROM \"http_req_failed\" WHERE $timeFilter",
+                        "alias": "Failed Requests",
+                        "refId": "C"
+                    },
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT mean(\"value\") FROM \"airbrx_cache_hit_rate\" WHERE $timeFilter",
+                        "alias": "Cache Hit Rate",
+                        "refId": "D"
+                    }
+                ],
+                "options": {
+                    "reduceOptions": {
+                        "values": false,
+                        "calcs": [
+                            "lastNotNull"
+                        ]
+                    },
+                    "textMode": "value_and_name",
+                    "graphMode": "none",
+                    "colorMode": "background"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "short",
+                        "decimals": 2
+                    },
+                    "overrides": [
+                        {
+                            "matcher": {
+                                "id": "byName",
+                                "options": "Cache Hit Rate"
+                            },
+                            "properties": [
+                                {
+                                    "id": "unit",
+                                    "value": "percentunit"
+                                },
+                                {
+                                    "id": "thresholds",
+                                    "value": {
+                                        "mode": "absolute",
+                                        "steps": [
+                                            {
+                                                "value": null,
+                                                "color": "red"
+                                            },
+                                            {
+                                                "value": 0.6,
+                                                "color": "yellow"
+                                            },
+                                            {
+                                                "value": 0.8,
+                                                "color": "green"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "id": 2,
+                "title": "Cache Hit Rate Over Time",
+                "type": "graph",
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 0,
+                    "y": 4
+                },
+                "targets": [
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT mean(\"value\") * 100 FROM \"airbrx_cache_hit_rate\" WHERE $timeFilter GROUP BY time($__interval)",
+                        "alias": "Cache Hit Rate %",
+                        "refId": "A"
+                    }
+                ],
+                "yaxes": [
+                    {
+                        "format": "percent",
+                        "min": 0,
+                        "max": 100
+                    },
+                    {
+                        "format": "short"
+                    }
+                ],
+                "lines": true,
+                "fill": 2,
+                "linewidth": 2,
+                "pointradius": 2,
+                "thresholds": [
+                    {
+                        "value": 60,
+                        "colorMode": "critical",
+                        "op": "lt",
+                        "line": true,
+                        "fill": false
+                    },
+                    {
+                        "value": 80,
+                        "colorMode": "warning",
+                        "op": "lt",
+                        "line": true,
+                        "fill": false
+                    }
+                ],
+                "tooltip": {
+                    "shared": true,
+                    "sort": 0
+                },
+                "legend": {
+                    "show": true,
+                    "values": true,
+                    "avg": true,
+                    "current": true,
+                    "max": true
+                }
+            },
+            {
+                "id": 3,
+                "title": "Response Time Distribution",
+                "type": "graph",
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 12,
+                    "y": 4
+                },
+                "targets": [
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT percentile(\"value\", 50) FROM \"http_req_duration\" WHERE $timeFilter GROUP BY time($__interval)",
+                        "alias": "p50 (Median)",
+                        "refId": "A"
+                    },
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT percentile(\"value\", 90) FROM \"http_req_duration\" WHERE $timeFilter GROUP BY time($__interval)",
+                        "alias": "p90",
+                        "refId": "B"
+                    },
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT percentile(\"value\", 95) FROM \"http_req_duration\" WHERE $timeFilter GROUP BY time($__interval)",
+                        "alias": "p95",
+                        "refId": "C"
+                    },
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT percentile(\"value\", 99) FROM \"http_req_duration\" WHERE $timeFilter GROUP BY time($__interval)",
+                        "alias": "p99",
+                        "refId": "D"
+                    }
+                ],
+                "yaxes": [
+                    {
+                        "format": "ms",
+                        "label": "Response Time"
+                    },
+                    {
+                        "format": "short"
+                    }
+                ],
+                "lines": true,
+                "linewidth": 2,
+                "tooltip": {
+                    "shared": true
+                },
+                "legend": {
+                    "show": true,
+                    "values": true,
+                    "current": true
+                }
+            },
+            {
+                "id": 4,
+                "title": "Cache Hit vs Miss Response Times",
+                "type": "graph",
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 0,
+                    "y": 12
+                },
+                "targets": [
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT mean(\"value\") FROM \"http_req_duration\" WHERE \"cache\" = 'hit' AND $timeFilter GROUP BY time($__interval)",
+                        "alias": "Cache HIT",
+                        "refId": "A"
+                    },
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT mean(\"value\") FROM \"http_req_duration\" WHERE \"cache\" = 'miss' AND $timeFilter GROUP BY time($__interval)",
+                        "alias": "Cache MISS",
+                        "refId": "B"
+                    },
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT mean(\"value\") FROM \"http_req_duration\" WHERE \"cache\" = 'bypass' AND $timeFilter GROUP BY time($__interval)",
+                        "alias": "Cache BYPASS",
+                        "refId": "C"
+                    }
+                ],
+                "yaxes": [
+                    {
+                        "format": "ms",
+                        "label": "Response Time"
+                    },
+                    {
+                        "format": "short"
+                    }
+                ],
+                "seriesOverrides": [
+                    {
+                        "alias": "Cache HIT",
+                        "color": "#73BF69"
+                    },
+                    {
+                        "alias": "Cache MISS",
+                        "color": "#F2CC0C"
+                    },
+                    {
+                        "alias": "Cache BYPASS",
+                        "color": "#E02F44"
+                    }
+                ],
+                "lines": true,
+                "linewidth": 2,
+                "tooltip": {
+                    "shared": true
+                }
+            },
+            {
+                "id": 5,
+                "title": "Cache Actions Breakdown",
+                "type": "piechart",
+                "gridPos": {
+                    "h": 8,
+                    "w": 6,
+                    "x": 12,
+                    "y": 12
+                },
+                "targets": [
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT sum(\"value\") FROM \"airbrx_cache_hits\" WHERE $timeFilter",
+                        "alias": "Cache Hits",
+                        "refId": "A"
+                    },
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT sum(\"value\") FROM \"airbrx_cache_misses\" WHERE $timeFilter",
+                        "alias": "Cache Misses",
+                        "refId": "B"
+                    },
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT sum(\"value\") FROM \"airbrx_cache_bypass\" WHERE $timeFilter",
+                        "alias": "Cache Bypass",
+                        "refId": "C"
+                    }
+                ],
+                "pieType": "donut",
+                "legend": {
+                    "show": true,
+                    "values": true,
+                    "percentage": true
+                }
+            },
+            {
+                "id": 6,
+                "title": "Snowflake Query Execution",
+                "type": "stat",
+                "gridPos": {
+                    "h": 8,
+                    "w": 6,
+                    "x": 18,
+                    "y": 12
+                },
+                "targets": [
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT sum(\"value\") FROM \"snowflake_queries_executed\" WHERE $timeFilter",
+                        "alias": "Total Snowflake Queries",
+                        "refId": "A"
+                    },
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT mean(\"value\") FROM \"snowflake_query_time\" WHERE $timeFilter",
+                        "alias": "Avg Query Time (ms)",
+                        "refId": "B"
+                    }
+                ],
+                "options": {
+                    "textMode": "value_and_name",
+                    "graphMode": "area",
+                    "colorMode": "background"
+                },
+                "fieldConfig": {
+                    "overrides": [
+                        {
+                            "matcher": {
+                                "id": "byName",
+                                "options": "Total Snowflake Queries"
+                            },
+                            "properties": [
+                                {
+                                    "id": "thresholds",
+                                    "value": {
+                                        "mode": "absolute",
+                                        "steps": [
+                                            {
+                                                "value": null,
+                                                "color": "green"
+                                            },
+                                            {
+                                                "value": 500,
+                                                "color": "yellow"
+                                            },
+                                            {
+                                                "value": 1000,
+                                                "color": "red"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "id": 7,
+                "title": "Rule Matching Distribution",
+                "type": "bargauge",
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 0,
+                    "y": 20
+                },
+                "targets": [
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT sum(\"value\") FROM \"airbrx_rule_matches\" WHERE $timeFilter GROUP BY \"rule\"",
+                        "alias": "$tag_rule",
+                        "refId": "A"
+                    }
+                ],
+                "options": {
+                    "displayMode": "gradient",
+                    "orientation": "horizontal",
+                    "reduceOptions": {
+                        "values": false,
+                        "calcs": [
+                            "lastNotNull"
+                        ]
+                    },
+                    "showUnfilled": true
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "short",
+                        "min": 0,
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "value": null,
+                                    "color": "blue"
+                                },
+                                {
+                                    "value": 50,
+                                    "color": "green"
+                                },
+                                {
+                                    "value": 100,
+                                    "color": "yellow"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": 8,
+                "title": "Conflict Resolution Count",
+                "type": "graph",
+                "gridPos": {
+                    "h": 8,
+                    "w": 12,
+                    "x": 12,
+                    "y": 20
+                },
+                "targets": [
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT sum(\"value\") FROM \"airbrx_conflict_resolutions\" WHERE $timeFilter GROUP BY time($__interval), \"winner\"",
+                        "alias": "$tag_winner",
+                        "refId": "A"
+                    }
+                ],
+                "yaxes": [
+                    {
+                        "format": "short",
+                        "label": "Conflicts Resolved"
+                    },
+                    {
+                        "format": "short"
+                    }
+                ],
+                "bars": true,
+                "stack": true,
+                "tooltip": {
+                    "shared": true,
+                    "sort": 2
+                }
+            },
+            {
+                "id": 9,
+                "title": "Request Rate (RPS)",
+                "type": "graph",
+                "gridPos": {
+                    "h": 6,
+                    "w": 12,
+                    "x": 0,
+                    "y": 28
+                },
+                "targets": [
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT derivative(mean(\"value\"), 1s) FROM \"http_reqs\" WHERE $timeFilter GROUP BY time($__interval)",
+                        "alias": "Requests/sec",
+                        "refId": "A"
+                    }
+                ],
+                "yaxes": [
+                    {
+                        "format": "reqps",
+                        "label": "Requests/sec"
+                    },
+                    {
+                        "format": "short"
+                    }
+                ],
+                "lines": true,
+                "fill": 2,
+                "linewidth": 2
+            },
+            {
+                "id": 10,
+                "title": "Virtual Users",
+                "type": "graph",
+                "gridPos": {
+                    "h": 6,
+                    "w": 12,
+                    "x": 12,
+                    "y": 28
+                },
+                "targets": [
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT mean(\"value\") FROM \"vus\" WHERE $timeFilter GROUP BY time($__interval)",
+                        "alias": "Active VUs",
+                        "refId": "A"
+                    },
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT mean(\"value\") FROM \"vus_max\" WHERE $timeFilter GROUP BY time($__interval)",
+                        "alias": "Max VUs",
+                        "refId": "B"
+                    }
+                ],
+                "yaxes": [
+                    {
+                        "format": "short",
+                        "label": "Virtual Users",
+                        "min": 0
+                    },
+                    {
+                        "format": "short"
+                    }
+                ],
+                "lines": true,
+                "fill": 1,
+                "linewidth": 2,
+                "steppedLine": true
+            },
+            {
+                "id": 11,
+                "title": "Test Scenarios Timeline",
+                "type": "state-timeline",
+                "gridPos": {
+                    "h": 6,
+                    "w": 24,
+                    "x": 0,
+                    "y": 34
+                },
+                "targets": [
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT count(\"value\") FROM \"http_reqs\" WHERE $timeFilter GROUP BY time($__interval), \"scenario\"",
+                        "alias": "$tag_scenario",
+                        "refId": "A"
+                    }
+                ],
+                "options": {
+                    "showValue": "auto",
+                    "rowHeight": 0.9,
+                    "mergeValues": true
+                }
+            },
+            {
+                "id": 12,
+                "title": "HTTP Status Codes",
+                "type": "piechart",
+                "gridPos": {
+                    "h": 6,
+                    "w": 8,
+                    "x": 0,
+                    "y": 40
+                },
+                "targets": [
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT sum(\"value\") FROM \"http_reqs\" WHERE $timeFilter GROUP BY \"status\"",
+                        "alias": "Status $tag_status",
+                        "refId": "A"
+                    }
+                ],
+                "pieType": "pie",
+                "legend": {
+                    "show": true,
+                    "values": true
+                }
+            },
+            {
+                "id": 13,
+                "title": "Error Rate",
+                "type": "stat",
+                "gridPos": {
+                    "h": 6,
+                    "w": 8,
+                    "x": 8,
+                    "y": 40
+                },
+                "targets": [
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT sum(\"value\") / (SELECT count(\"value\") FROM \"http_reqs\" WHERE $timeFilter) * 100 FROM \"http_req_failed\" WHERE $timeFilter",
+                        "alias": "Error Rate %",
+                        "refId": "A"
+                    }
+                ],
+                "options": {
+                    "textMode": "value_and_name",
+                    "graphMode": "area",
+                    "colorMode": "background"
+                },
+                "fieldConfig": {
+                    "defaults": {
+                        "unit": "percent",
+                        "decimals": 2,
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "value": null,
+                                    "color": "green"
+                                },
+                                {
+                                    "value": 1,
+                                    "color": "yellow"
+                                },
+                                {
+                                    "value": 5,
+                                    "color": "red"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                "id": 14,
+                "title": "Data Transfer",
+                "type": "graph",
+                "gridPos": {
+                    "h": 6,
+                    "w": 8,
+                    "x": 16,
+                    "y": 40
+                },
+                "targets": [
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT derivative(sum(\"value\"), 1s) FROM \"data_sent\" WHERE $timeFilter GROUP BY time($__interval)",
+                        "alias": "Data Sent",
+                        "refId": "A"
+                    },
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT derivative(sum(\"value\"), 1s) FROM \"data_received\" WHERE $timeFilter GROUP BY time($__interval)",
+                        "alias": "Data Received",
+                        "refId": "B"
+                    }
+                ],
+                "yaxes": [
+                    {
+                        "format": "Bps",
+                        "label": "Bytes/sec"
+                    },
+                    {
+                        "format": "short"
+                    }
+                ],
+                "lines": true,
+                "fill": 2
+            },
+            {
+                "id": 15,
+                "title": "Query Performance by Category",
+                "type": "table",
+                "gridPos": {
+                    "h": 8,
+                    "w": 24,
+                    "x": 0,
+                    "y": 46
+                },
+                "targets": [
+                    {
+                        "datasource": "InfluxDB-K6",
+                        "query": "SELECT mean(\"value\") as \"Avg Response Time\", percentile(\"value\", 95) as \"p95\", percentile(\"value\", 99) as \"p99\", count(\"value\") as \"Requests\" FROM \"http_req_duration\" WHERE $timeFilter GROUP BY \"query_category\"",
+                        "refId": "A",
+                        "format": "table"
+                    }
+                ],
+                "options": {
+                    "showHeader": true,
+                    "sortBy": [
+                        {
+                            "displayName": "Avg Response Time",
+                            "desc": true
+                        }
+                    ]
+                },
+                "fieldConfig": {
+                    "overrides": [
+                        {
+                            "matcher": {
+                                "id": "byName",
+                                "options": "Avg Response Time"
+                            },
+                            "properties": [
+                                {
+                                    "id": "unit",
+                                    "value": "ms"
+                                }
+                            ]
+                        },
+                        {
+                            "matcher": {
+                                "id": "byName",
+                                "options": "p95"
+                            },
+                            "properties": [
+                                {
+                                    "id": "unit",
+                                    "value": "ms"
+                                }
+                            ]
+                        },
+                        {
+                            "matcher": {
+                                "id": "byName",
+                                "options": "p99"
+                            },
+                            "properties": [
+                                {
+                                    "id": "unit",
+                                    "value": "ms"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "overwrite": true,
+    "folderId": 0,
+    "folderUid": "",
+    "message": "AirBrx K6 Load Test Dashboard - Initial Version"
+}
